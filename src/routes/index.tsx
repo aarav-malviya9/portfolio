@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
-import { ArrowDown, ArrowDownRight, ArrowUpRight, Github, MoveUpRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowDown, ArrowDownRight, ArrowUpRight, ChevronDown, Github, MoveUpRight } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 
 const projects = [
-  { id: 'shellsentry', name: 'ShellSentry', number: '01', category: 'Security', kind: 'terminal', description: 'A simulated incident-response lab. Follow the evidence, reconstruct the attack, then explain what happened.', stack: 'React · TypeScript · AI Copilot', repo: 'https://github.com/aarav-malviya9/shellsentry', url: '' },
-  { id: 'phishlighter', name: 'PhishLighter', number: '02', category: 'Security', kind: 'highlight', description: 'An AI detector that shows the psychological tricks hiding in emails and messages—not just suspicious links.', stack: 'AI · Social engineering · Browser', repo: 'https://github.com/aarav-malviya9/phishlighter', url: '' },
-  { id: 'lemonrag', name: 'LemonRAG', number: '03', category: 'AI, local-first', kind: 'orbit', description: 'A private document Q&A assistant. Retrieval and generation stay on your machine, powered by Lemonade Server.', stack: 'Python · RAG · AMD Lemonade', repo: 'https://github.com/aarav-malviya9/lemonrag', url: '' },
-  { id: 'tradin-terminal', name: 'Tradin Terminal', number: '04', category: 'Systems', kind: 'chart', description: 'A professional financial terminal for advanced trading and analysis.', stack: 'TypeScript · Finance', repo: 'https://github.com/aarav-malviya9/tradin-terminal', url: 'https://financial-terminal-pearl.vercel.app' },
-  { id: 'zenith-launcher', name: 'Zenith', number: '05', category: 'Product', kind: 'zenith', description: 'A minimalist Android launcher built around a quieter, more intentional relationship with your phone.', stack: 'Kotlin · Android', repo: 'https://github.com/aarav-malviya9/zenith-launcher', url: 'https://zenith-minimalist-launcher.netlify.app/' },
+  { id: 'shellsentry', name: 'ShellSentry', number: '01', category: 'Security', kind: 'terminal', description: 'A simulated incident-response lab. Follow the evidence, reconstruct the attack, then explain what happened.', stack: 'React · TypeScript · AI Copilot', repo: 'https://github.com/aarav-malviya9/shellsentry', url: '', approach: 'Follow the evidence, reconstruct the attack, then explain what happened.' },
+  { id: 'phishlighter', name: 'PhishLighter', number: '02', category: 'Security', kind: 'highlight', description: 'An AI detector that shows the psychological tricks hiding in emails and messages—not just suspicious links.', stack: 'AI · Social engineering · Browser', repo: 'https://github.com/aarav-malviya9/phishlighter', url: '', approach: 'Surface the psychological tricks in a message—not only suspicious links.' },
+  { id: 'lemonrag', name: 'LemonRAG', number: '03', category: 'AI, local-first', kind: 'orbit', description: 'A private document Q&A assistant. Retrieval and generation stay on your machine, powered by Lemonade Server.', stack: 'Python · RAG · AMD Lemonade', repo: 'https://github.com/aarav-malviya9/lemonrag', url: '', approach: 'Keep retrieval and generation on your machine, powered by Lemonade Server.' },
+  { id: 'tradin-terminal', name: 'Tradin Terminal', number: '04', category: 'Systems', kind: 'chart', description: 'A professional financial terminal for advanced trading and analysis.', stack: 'TypeScript · Finance', repo: 'https://github.com/aarav-malviya9/tradin-terminal', url: 'https://financial-terminal-pearl.vercel.app', approach: 'A financial terminal focused on advanced trading and analysis.' },
+  { id: 'zenith-launcher', name: 'Zenith', number: '05', category: 'Product', kind: 'zenith', description: 'A minimalist Android launcher built around a quieter, more intentional relationship with your phone.', stack: 'Kotlin · Android', repo: 'https://github.com/aarav-malviya9/zenith-launcher', url: 'https://zenith-minimalist-launcher.netlify.app/', approach: 'Make room for a quieter, more intentional relationship with a phone.' },
 ]
 
 const thoughts = [
@@ -36,10 +36,34 @@ function ProjectMark({ kind }: { kind: string }) {
 }
 
 function Portfolio() {
+  const shellRef = useRef<HTMLElement>(null)
   const [selected, setSelected] = useState('shellsentry')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [view, setView] = useState<'notebook' | 'builder'>('notebook')
   const [visits, setVisits] = useState(1)
   const [thought, setThought] = useState(thoughts[0])
   const focusProject = projects.find((project) => project.id === selected) ?? projects[0]
+
+  useEffect(() => {
+    const shell = shellRef.current
+    if (!shell) return
+    let frame = 0
+    const updateProgress = () => {
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(() => {
+        const range = document.documentElement.scrollHeight - window.innerHeight
+        shell.style.setProperty('--reading-progress', String(range > 0 ? window.scrollY / range : 0))
+      })
+    }
+    updateProgress()
+    window.addEventListener('scroll', updateProgress, { passive: true })
+    window.addEventListener('resize', updateProgress)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', updateProgress)
+      window.removeEventListener('resize', updateProgress)
+    }
+  }, [])
 
   useEffect(() => {
     const key = 'aarav-portfolio-visits'
@@ -53,7 +77,8 @@ function Portfolio() {
   }, [])
 
   return (
-    <main className="folio-shell">
+    <main className="folio-shell" ref={shellRef} data-view={view}>
+      <div className="reading-rail" aria-hidden="true"><span /></div>
       <header className="folio-nav">
         <a className="wordmark" href="#top" aria-label="Aarav Malviya, home">AM<span>®</span></a>
         <p className="nav-note">AN OPEN NOTEBOOK&nbsp; / &nbsp;INDIA</p>
@@ -83,16 +108,21 @@ function Portfolio() {
       <div className="marquee" aria-label="Curiosity, care, and a little bit of play"><div className="marquee-track"><span>CURIOUS BY DEFAULT <b>·</b> BUILT WITH CARE <b>·</b> BETTER A LITTLE WEIRD <b>·</b> CURIOUS BY DEFAULT <b>·</b> BUILT WITH CARE <b>·</b> BETTER A LITTLE WEIRD <b>·</b></span></div></div>
 
       <section className="work-section" id="work">
-        <div className="section-heading"><div><p className="eyebrow">01 — THINGS I’VE PUT INTO THE WORLD</p><h2>Selected <em>work.</em></h2></div><p className="section-aside">A handful of experiments in making technology feel more useful, more human, or just more fun.</p></div>
+        <div className="section-heading reveal"><div><p className="eyebrow">01 — THINGS I’VE PUT INTO THE WORLD</p><h2>Selected <em>work.</em></h2></div><div className="section-intro"><p className="section-aside">A handful of experiments in making technology feel more useful, more human, or just more fun.</p><div className="view-toggle" role="group" aria-label="Choose project view"><button type="button" aria-pressed={view === 'notebook'} onClick={() => setView('notebook')}>Notebook</button><button type="button" aria-pressed={view === 'builder'} onClick={() => setView('builder')}>Builder</button></div></div></div>
         <div className="project-grid">
-          {projects.map((project, index) => <article className={`project-card project-card-${index + 1}${selected === project.id ? ' is-selected' : ''}`} key={project.id} onMouseEnter={() => setSelected(project.id)} onFocus={() => setSelected(project.id)}>
-            <button className="project-select" onClick={() => setSelected(project.id)} aria-label={`Feature ${project.name}`} aria-pressed={selected === project.id}>
+          {projects.map((project, index) => <article className={`project-card project-card-${index + 1}${selected === project.id ? ' is-selected' : ''}${expanded === project.id ? ' is-expanded' : ''} reveal`} key={project.id} onMouseEnter={() => setSelected(project.id)} onFocus={() => setSelected(project.id)}>
+            <button className="project-select" type="button" onClick={() => { setSelected(project.id); setExpanded((current) => current === project.id ? null : project.id) }} aria-label={`${expanded === project.id ? 'Close' : 'Open'} ${project.name} field note`} aria-expanded={expanded === project.id}>
               <div className={`project-art project-art-${project.kind}`}><ProjectMark kind={project.kind} /><span className="art-index">{project.number} / 05</span></div>
               <div className="project-meta"><span>{project.category.toUpperCase()}</span><span>{project.stack}</span></div>
-              <div className="project-title-row"><h3>{project.name}</h3><ArrowUpRight size={19} /></div>
+              <div className="project-title-row"><h3>{project.name}</h3><ChevronDown className="expand-indicator" size={18} /></div>
               <p>{project.description}</p>
             </button>
             <div className="project-links"><a href={project.repo} target="_blank" rel="noreferrer"><Github size={14} /> Source <ArrowUpRight size={13} /></a>{project.url && <a href={project.url} target="_blank" rel="noreferrer">Live project <ArrowUpRight size={13} /></a>}</div>
+            {expanded === project.id && <div className="project-note" id={`note-${project.id}`}>
+              <div className="note-rule"><span>FIELD NOTE</span><span>{project.number} / 05</span></div>
+              {view === 'notebook' ? <><p className="margin-label">The question</p><p>{project.description}</p><p className="margin-label">The approach</p><p>{project.approach}</p></> : <><p className="margin-label">Implementation notes</p><p>{project.description}</p><p className="margin-label">Technologies</p><p className="tech-list">{project.stack}</p></>}
+              <div className="note-destinations"><span>Explore what’s available</span><a href={project.repo} target="_blank" rel="noreferrer">Repository <ArrowUpRight size={13} /></a>{project.url && <a href={project.url} target="_blank" rel="noreferrer">Live demo <ArrowUpRight size={13} /></a>}</div>
+            </div>}
           </article>)}
         </div>
         <a className="all-work-link" href="https://github.com/aarav-malviya9?tab=repositories" target="_blank" rel="noreferrer">There’s more where these came from <span>Browse all repositories <ArrowUpRight size={15} /></span></a>
